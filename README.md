@@ -38,7 +38,6 @@ Podés usar cualquiera de ellos o crear tu propio archivo JSON para analizar.
 
 ```bash
 git clone https://github.com/Naidess/TP01_compiladores.git
-cd analizador-lexico-json
 ```
 
 ### 2. Clonar el Repositorio
