@@ -40,7 +40,7 @@ Podés usar cualquiera de ellos o crear tu propio archivo JSON para analizar.
 git clone https://github.com/Naidess/TP01_compiladores.git
 ```
 
-### 2. Clonar el Repositorio
+### 2. Compilar el Proyecto
 
 ```bash
 javac -d . src/analizadorlexico/*.java
