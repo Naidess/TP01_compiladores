@@ -37,7 +37,7 @@ Podés usar cualquiera de ellos o crear tu propio archivo JSON para analizar.
 ### 1. Clonar el Repositorio
 
 ```bash
-git clone https://github.com/tuusuario/analizador-lexico-json.git
+git clone https://github.com/Naidess/TP01_compiladores.git
 cd analizador-lexico-json
 ```
 
