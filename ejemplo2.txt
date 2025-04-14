@@ -1,0 +1,43 @@
+{
+   "personas": [
+      {
+         "ci": 1234567,
+         "nombre": "Julio Pérez",
+         "casado": false,
+         "fecha_nacimiento": "1980-03-15",
+         "direccion": {
+            "calle": "Av. Siempre Viva 742",
+            "ciudad": "Springfield",
+            "pais": "USA"
+         },
+         "ocupacion": "Ingeniero",
+         "hijos": []
+      },
+      {
+         "ci": 7654321,
+         "nombre": "Juan Gómez",
+         "casado": true,
+         "fecha_nacimiento": "1975-05-22",
+         "direccion": {
+            "calle": "Calle Ficticia 123",
+            "ciudad": "Ciudad X",
+            "pais": "Ficticia"
+         },
+         "ocupacion": "Médico",
+         "hijos": [
+            {
+               "nombre": "Jorge",
+               "edad": 18,
+               "ocupacion": "Estudiante",
+               "hobbies": ["Fútbol", "Videojuegos"]
+            },
+            {
+               "nombre": "Valeria",
+               "edad": 16,
+               "ocupacion": "Estudiante",
+               "hobbies": ["Lectura", "Arte"]
+            }
+         ]
+      }
+   ]
+}
