@@ -4,37 +4,49 @@ import java.io.*;
 import java.util.*;
 
 public class Lexer {
-    private final BufferedReader reader;
-    private String currentLine;
+    private final String contenido;
     private int lineNumber;
 
     public Lexer(String filePath) throws IOException {
-        this.reader = new BufferedReader(new FileReader(filePath));
+        StringBuilder sb = new StringBuilder();
+        BufferedReader reader = new BufferedReader(new FileReader(filePath));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line).append("\n"); // conservamos saltos de línea
+        }
+        reader.close();
+        this.contenido = sb.toString();
         this.lineNumber = 1;
     }
 
-    private List<Token> processLine(String line) {
+    public void processFile() {
+        List<Token> tokens = processLine(contenido);
+        printTokens(tokens, 0);
+    }
+
+    private List<Token> processLine(String text) {
         List<Token> tokens = new ArrayList<>();
         int i = 0;
 
-        while (i < line.length()) {
-            char currentChar = line.charAt(i);
+        while (i < text.length()) {
+            char currentChar = text.charAt(i);
 
             if (Character.isWhitespace(currentChar)) {
+                if (currentChar == '\n') lineNumber++;
                 i++;
                 continue;
             }
 
             if (currentChar == '"') {
-                String str = extractString(line, i);
+                String str = extractString(text, i);
                 tokens.add(new Token(TokenType.LITERAL_CADENA, str));
-                i += str.length() + 2;  // skip the quotes
+                i += str.length() + 2;
             } else if (Character.isDigit(currentChar)) {
-                String num = extractNumber(line, i);
+                String num = extractNumber(text, i);
                 tokens.add(new Token(TokenType.LITERAL_NUM, num));
                 i += num.length();
             } else if (Character.isLetter(currentChar)) {
-                String word = extractWord(line, i);
+                String word = extractWord(text, i);
                 TokenType type = getKeywordType(word);
                 if (type != TokenType.ERROR) {
                     tokens.add(new Token(type, word));
@@ -54,118 +66,26 @@ public class Lexer {
                 }
             }
         }
+
         return tokens;
     }
 
-    public void processFile() throws IOException {
-        String line;
-        int level = 0;
-        while ((line = reader.readLine()) != null) {
-            currentLine = line.trim();
-            List<Token> tokens = processLine(currentLine);
-            level = printTokens(tokens, level);  // Devuelve el nuevo nivel
-            lineNumber++;
-        }
-    }
-    
-private int printTokens(List<Token> tokens, int level) {
-    StringBuilder output = new StringBuilder();
-    boolean nuevaLinea = true;
-
-    for (int i = 0; i < tokens.size(); i++) {
-        Token token = tokens.get(i);
-
-        switch (token.getType()) {
-            case LITERAL_CADENA -> {
-                if (nuevaLinea) output.append("\t".repeat(level));
-                output.append("STRING");
-                nuevaLinea = false;
-
-                // Chequear si el siguiente es DOS_PUNTOS para imprimir en la misma línea
-                if (i + 1 < tokens.size() && tokens.get(i + 1).getType() == TokenType.DOS_PUNTOS) {
-                    i++;
-                    output.append(" DOS_PUNTOS ");
-
-                    // Imprimir inmediatamente el valor del par clave-valor
-                    if (i + 1 < tokens.size()) {
-                        Token valor = tokens.get(i + 1);
-                        switch (valor.getType()) {
-                            case LITERAL_CADENA -> output.append("STRING");
-                            case LITERAL_NUM -> output.append("NUMBER");
-                            case PR_TRUE -> output.append("PR_TRUE");
-                            case PR_FALSE -> output.append("PR_FALSE");
-                            case PR_NULL -> output.append("PR_NULL");
-                            case L_LLAVE, L_CORCHETE -> {
-                                output.append(valor.getType().name());
-                                level++;
-                            }
-                            default -> output.append(valor.getType().name());
-                        }
-                        i++; // avanzamos el valor
-                    }
-                    // Si el siguiente token es COMA, lo agregamos
-                    if (i + 1 < tokens.size() && tokens.get(i + 1).getType() == TokenType.COMA) {
-                        output.append(" COMA");
-                        i++;
-                    }
-                    output.append("\n");
-                    nuevaLinea = true;
-                }
-            }
-            case L_LLAVE, L_CORCHETE -> {
-                if (!nuevaLinea) output.append("\n");
-                output.append("\t".repeat(level)).append(token.getType().name()).append("\n");
-                level++;
-                nuevaLinea = true;
-            }
-            case R_LLAVE, R_CORCHETE -> {
-                level--; // decrementamos nivel antes de imprimir
-                if (!nuevaLinea) output.append("\n");
-                output.append("\t".repeat(level)).append(token.getType().name());
-
-                // Si el siguiente token es COMA, lo agregamos en la misma línea
-                if (i + 1 < tokens.size() && tokens.get(i + 1).getType() == TokenType.COMA) {
-                    output.append(" COMA");
-                    i++;
-                }
-                output.append("\n");
-                nuevaLinea = true;
-            }
-            default -> {
-                // otros tokens (si los hay)
-                if (nuevaLinea) output.append("\t".repeat(level));
-                output.append(token.getType().name());
-                nuevaLinea = false;
-            }
-        }
+    private String extractString(String text, int startIndex) {
+        int endIndex = text.indexOf('"', startIndex + 1);
+        if (endIndex == -1) return "";
+        return text.substring(startIndex + 1, endIndex);
     }
 
-    System.out.print(output.toString());
-    return level;
-}
-
-    private String extractString(String line, int startIndex) {
-        int endIndex = line.indexOf('"', startIndex + 1);
-        if (endIndex == -1) {
-            return "";
-        }
-        return line.substring(startIndex + 1, endIndex);
-    }
-
-    private String extractNumber(String line, int startIndex) {
+    private String extractNumber(String text, int startIndex) {
         int i = startIndex;
-        while (i < line.length() && (Character.isDigit(line.charAt(i)) || line.charAt(i) == '.')) {
-            i++;
-        }
-        return line.substring(startIndex, i);
+        while (i < text.length() && (Character.isDigit(text.charAt(i)) || text.charAt(i) == '.')) i++;
+        return text.substring(startIndex, i);
     }
-    
-    private String extractWord(String line, int startIndex) {
+
+    private String extractWord(String text, int startIndex) {
         int i = startIndex;
-        while (i < line.length() && Character.isLetter(line.charAt(i))) {
-        i++;
-        }
-        return line.substring(startIndex, i);
+        while (i < text.length() && Character.isLetter(text.charAt(i))) i++;
+        return text.substring(startIndex, i);
     }
 
     private TokenType getKeywordType(String word) {
@@ -176,7 +96,7 @@ private int printTokens(List<Token> tokens, int level) {
             default -> TokenType.ERROR;
         };
     }
-    
+
     private TokenType getTokenType(char currentChar) {
         return switch (currentChar) {
             case '{' -> TokenType.L_LLAVE;
@@ -187,5 +107,93 @@ private int printTokens(List<Token> tokens, int level) {
             case ',' -> TokenType.COMA;
             default -> TokenType.ERROR;
         };
+    }
+
+    private int printTokens(List<Token> tokens, int level) {
+        StringBuilder output = new StringBuilder();
+        boolean nuevaLinea = true;
+
+        for (int i = 0; i < tokens.size(); i++) {
+            Token token = tokens.get(i);
+
+            switch (token.getType()) {
+                case LITERAL_CADENA -> {
+                    if (nuevaLinea) output.append("\t".repeat(level));
+                    output.append("STRING");
+                    nuevaLinea = false;
+
+                    if (i + 1 < tokens.size() && tokens.get(i + 1).getType() == TokenType.DOS_PUNTOS) {
+                        i++;
+                        output.append(" DOS_PUNTOS ");
+
+                        if (i + 1 < tokens.size()) {
+                            Token valor = tokens.get(i + 1);
+                            switch (valor.getType()) {
+                                case LITERAL_CADENA -> output.append("STRING");
+                                case LITERAL_NUM -> output.append("NUMBER");
+                                case PR_TRUE -> output.append("PR_TRUE");
+                                case PR_FALSE -> output.append("PR_FALSE");
+                                case PR_NULL -> output.append("PR_NULL");
+                                case L_LLAVE, L_CORCHETE -> {
+                                    output.append(valor.getType().name());
+                                    level++;
+                                    nuevaLinea = true;
+
+                                    // Array vacío [ ]
+                                    if (valor.getType() == TokenType.L_CORCHETE &&
+                                        i + 2 < tokens.size() &&
+                                        tokens.get(i + 2).getType() == TokenType.R_CORCHETE) {
+                                        output.append("\t".repeat(level)).append("\n");
+                                    }
+                                }
+                                default -> output.append(valor.getType().name());
+                            }
+                            i++;
+                        }
+
+                        if (i + 1 < tokens.size() && tokens.get(i + 1).getType() == TokenType.COMA) {
+                            output.append(" COMA");
+                            i++;
+                        }
+                        output.append("\n");
+                        nuevaLinea = true;
+                    }
+                }
+
+                case L_LLAVE, L_CORCHETE -> {
+                    if (!nuevaLinea) output.append("\n");
+                    output.append("\t".repeat(level)).append(token.getType().name()).append("\n");
+                    level++;
+                    nuevaLinea = true;
+
+                    if (token.getType() == TokenType.L_CORCHETE &&
+                        i + 1 < tokens.size() &&
+                        tokens.get(i + 1).getType() == TokenType.R_CORCHETE) {
+                        output.append("\t".repeat(level)).append("\n");
+                    }
+                }
+
+                case R_LLAVE, R_CORCHETE -> {
+                    level--;
+                    if (!nuevaLinea) output.append("\n");
+                    output.append("\t".repeat(level)).append(token.getType().name());
+                    if (i + 1 < tokens.size() && tokens.get(i + 1).getType() == TokenType.COMA) {
+                        output.append(" COMA");
+                        i++;
+                    }
+                    output.append("\n");
+                    nuevaLinea = true;
+                }
+
+                default -> {
+                    if (nuevaLinea) output.append("\t".repeat(level));
+                    output.append(token.getType().name());
+                    nuevaLinea = false;
+                }
+            }
+        }
+
+        System.out.print(output.toString());
+        return level;
     }
 }
