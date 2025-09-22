@@ -68,71 +68,81 @@ public class Lexer {
         }
     }
     
-    private int printTokens(List<Token> tokens, int level) {
-        StringBuilder output = new StringBuilder();
-        boolean nuevaLinea = true;
+private int printTokens(List<Token> tokens, int level) {
+    StringBuilder output = new StringBuilder();
+    boolean nuevaLinea = true;
 
-        for (int i = 0; i < tokens.size(); i++) {
-            Token token = tokens.get(i);
+    for (int i = 0; i < tokens.size(); i++) {
+        Token token = tokens.get(i);
 
-            // Decrementar nivel si es cierre
-            if (token.getType() == TokenType.R_LLAVE || token.getType() == TokenType.R_CORCHETE) {
-                level--;
-            }
-
-            // Indentar si corresponde
-            if (nuevaLinea) {
-                output.append("\t".repeat(level));
+        switch (token.getType()) {
+            case LITERAL_CADENA -> {
+                if (nuevaLinea) output.append("\t".repeat(level));
+                output.append("STRING");
                 nuevaLinea = false;
-            }
 
-            // Manejo especial para cierre seguido de coma
-            if ((token.getType() == TokenType.R_LLAVE || token.getType() == TokenType.R_CORCHETE)
-                    && i + 1 < tokens.size()
-                    && tokens.get(i + 1).getType() == TokenType.COMA) {
-                output.append(token.getType().name()).append(" COMA\n");
-                i++; // saltar la coma
-                nuevaLinea = true;
-                continue;
-            }
+                // Chequear si el siguiente es DOS_PUNTOS para imprimir en la misma línea
+                if (i + 1 < tokens.size() && tokens.get(i + 1).getType() == TokenType.DOS_PUNTOS) {
+                    i++;
+                    output.append(" DOS_PUNTOS ");
 
-            // Imprimir token
-            switch (token.getType()) {
-                case LITERAL_CADENA -> output.append("STRING");
-                case LITERAL_NUM -> output.append("NUMBER");
-                case PR_FALSE -> output.append("PR_FALSE");
-                case PR_TRUE -> output.append("PR_TRUE");
-                case PR_NULL -> output.append("PR_NULL");
-                case DOS_PUNTOS -> output.append(" DOS_PUNTOS ");
-                case COMA -> {
-                    output.append(" COMA\n");
-                    nuevaLinea = true;
-                }
-                case L_LLAVE, L_CORCHETE -> {
-                    output.append(token.getType().name()).append("\n");
-                    nuevaLinea = true;
-                    level++;
-                }
-                case R_LLAVE, R_CORCHETE -> {
-                    output.append(token.getType().name()).append("\n");
-                    nuevaLinea = true;
-                }
-                default -> output.append(token.getType().name());
-            }
-
-            if (i + 1 < tokens.size()) {
-                Token nextToken = tokens.get(i + 1);
-                if ((nextToken.getType() == TokenType.R_LLAVE || nextToken.getType() == TokenType.R_CORCHETE)
-                    && token.getType() != TokenType.COMA && token.getType() != TokenType.DOS_PUNTOS) {
+                    // Imprimir inmediatamente el valor del par clave-valor
+                    if (i + 1 < tokens.size()) {
+                        Token valor = tokens.get(i + 1);
+                        switch (valor.getType()) {
+                            case LITERAL_CADENA -> output.append("STRING");
+                            case LITERAL_NUM -> output.append("NUMBER");
+                            case PR_TRUE -> output.append("PR_TRUE");
+                            case PR_FALSE -> output.append("PR_FALSE");
+                            case PR_NULL -> output.append("PR_NULL");
+                            case L_LLAVE, L_CORCHETE -> {
+                                output.append(valor.getType().name());
+                                level++;
+                            }
+                            default -> output.append(valor.getType().name());
+                        }
+                        i++; // avanzamos el valor
+                    }
+                    // Si el siguiente token es COMA, lo agregamos
+                    if (i + 1 < tokens.size() && tokens.get(i + 1).getType() == TokenType.COMA) {
+                        output.append(" COMA");
+                        i++;
+                    }
                     output.append("\n");
                     nuevaLinea = true;
                 }
             }
-        }
+            case L_LLAVE, L_CORCHETE -> {
+                if (!nuevaLinea) output.append("\n");
+                output.append("\t".repeat(level)).append(token.getType().name()).append("\n");
+                level++;
+                nuevaLinea = true;
+            }
+            case R_LLAVE, R_CORCHETE -> {
+                level--; // decrementamos nivel antes de imprimir
+                if (!nuevaLinea) output.append("\n");
+                output.append("\t".repeat(level)).append(token.getType().name());
 
-        System.out.print(output.toString());
-        return level;
+                // Si el siguiente token es COMA, lo agregamos en la misma línea
+                if (i + 1 < tokens.size() && tokens.get(i + 1).getType() == TokenType.COMA) {
+                    output.append(" COMA");
+                    i++;
+                }
+                output.append("\n");
+                nuevaLinea = true;
+            }
+            default -> {
+                // otros tokens (si los hay)
+                if (nuevaLinea) output.append("\t".repeat(level));
+                output.append(token.getType().name());
+                nuevaLinea = false;
+            }
+        }
     }
+
+    System.out.print(output.toString());
+    return level;
+}
 
     private String extractString(String line, int startIndex) {
         int endIndex = line.indexOf('"', startIndex + 1);
