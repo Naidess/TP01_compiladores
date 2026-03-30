@@ -43,12 +43,17 @@ git clone https://github.com/Naidess/TP01_compiladores.git
 ### 2. Compilar el Proyecto
 
 ```bash
-javac -d . src/analizadorlexico/*.java
+javac -d build/classes src/analizadorlexico/*.java
 ```
+
 ### 3. Ejecutar el Analizador
 
 ```bash
-java analizadorlexico.AnalizadorLexico fuente.txt > salida.txt
+java -cp build/classes analizadorlexico.AnalizadorLexico fuente.txt > salida.txt
 ```
-- `fuente.txt`: nombre del archivo JSON a analizar (podés usar fuente.txt, ejemplo.txt, etc.)
+
+**Parámetros:**
+- `fuente.txt`: nombre del archivo JSON a analizar (podés usar `fuente.txt`, `ejemplo.txt`, `ejemplo2.txt`, etc.)
 - `salida.txt`: archivo de salida donde se generará la estructura jerárquica de tokens.
+
+**Nota:** Si la carpeta `build/classes` no existe, créala manualmente o ejecuta primero el comando de compilación.
